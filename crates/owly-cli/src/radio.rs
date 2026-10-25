@@ -28,7 +28,7 @@ pub fn exit_code(e: &zbus::Error) -> (u8, String) {
 
 /// Takes the radio and holds it until Ctrl-C, SIGTERM, the duration or
 /// the link's end.
-pub async fn up(bus: Option<&str>, duration: u32) -> Result<ExitCode, String> {
+pub async fn up(bus: Option<&str>, duration: u32, json: bool) -> Result<ExitCode, String> {
     // Cached, for the stream of peer changes.
     let conn = api::connect(bus).await.map_err(|e| unreachable(&e))?;
     let radio = RadioProxy::new(&conn).await.map_err(|e| unreachable(&e))?;
@@ -47,6 +47,9 @@ pub async fn up(bus: Option<&str>, duration: u32) -> Result<ExitCode, String> {
         }
     };
     if let Some(l) = LinkInfo::from_dict(&link) {
+        if json {
+            crate::machine::emit(serde_json::json!({"event": "ready", "interface": l.interface}));
+        }
         eprintln!(
             "{} is up: {}%{} ({}). Ctrl-C takes it down.",
             l.interface, l.address, l.interface, l.mac
@@ -77,6 +80,9 @@ pub async fn up(bus: Option<&str>, duration: u32) -> Result<ExitCode, String> {
                 if a.lease == lease && a.state == "idle" {
                     eprintln!("owly: the radio went down: {}", a.reason);
                     wifi::restore(wifi).await;
+                    if json && a.reason == "expired" {
+                        return Ok(ExitCode::SUCCESS);
+                    }
                     return Ok(ExitCode::from(1));
                 }
             }

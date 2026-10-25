@@ -108,6 +108,16 @@ readme-preview theme="dark":
     sed -i 's|<html lang="en">|<html lang="en" data-color-mode="{{ theme }}" data-{{ theme }}-theme="{{ theme }}">|' "$out"
     xdg-open "$out"
 
+# Install the native Plasma 6 panel widget and its presentation-capable CLI (user only)
+plasma-install:
+    bash plasma/install.sh
+
+# Build and check the Qt adapter without touching the real radio
+plasma-check:
+    cmake -S plasma -B target/plasma -DBUILD_TESTING=ON
+    cmake --build target/plasma --parallel 2
+    ctest --test-dir target/plasma --output-on-failure
+
 # Set the version in Cargo.toml, owly-radio's owly-awdl pin, Cargo.lock and the PKGBUILDs (pushing it releases)
 bump version:
     #!/usr/bin/env bash

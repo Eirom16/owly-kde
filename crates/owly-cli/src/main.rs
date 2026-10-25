@@ -19,6 +19,7 @@ mod airdrop;
 mod bluez;
 mod capture;
 mod doctor;
+mod machine;
 mod radio;
 mod test_card;
 mod wifi;
@@ -68,6 +69,9 @@ enum Radio {
     },
     /// Bring awdl0 up and hold it until Ctrl-C.
     Up {
+        /// Stream newline-delimited JSON events for graphical clients.
+        #[arg(long)]
+        json: bool,
         /// Give it back after this many seconds.
         #[arg(long = "for", value_name = "SECONDS", default_value_t = 0)]
         duration: u32,
@@ -91,11 +95,11 @@ fn main() -> ExitCode {
             Command::Doctor { json } | Command::Radio(Radio::Probe { json }) => {
                 doctor::run(bus, json).await
             }
-            Command::Radio(Radio::Up { duration }) => radio::up(bus, duration).await,
+            Command::Radio(Radio::Up { duration, json }) => radio::up(bus, duration, json).await,
             Command::Radio(Radio::Peers) => radio::peers(bus).await,
             Command::Receive(args) => airdrop::receive(bus, args).await,
             Command::Send(args) => airdrop::send(bus, args).await,
-            Command::Browse(args) => airdrop::browse(args).await,
+            Command::Browse(args) => airdrop::browse(bus, args).await,
             Command::TestCard(args) => test_card::run(bus, args).await,
             Command::Capture(args) => capture::run(args).await,
         }

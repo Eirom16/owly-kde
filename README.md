@@ -1,110 +1,112 @@
-# Owly
+# Owly KDE
 
-https://github.com/user-attachments/assets/b195ce4c-e078-49be-bc13-44a72b6dc189
+**AirDrop desde el panel de KDE Plasma.** Envía y recibe archivos con dispositivos
+Apple mediante un elemento gráfico que se adapta al tema de tu escritorio.
 
-AirDrop between iPhones and Linux devices whose Wi-Fi isn't Apple's Broadcom chip.
+Este fork de [Owly](https://github.com/t4t5/owly) está enfocado en KDE Plasma 6.
+Conserva su motor de AirDrop y AWDL, y añade una interfaz nativa en QML con
+Plasma Components, Plasma Extras y Kirigami.
 
-See [supported hardware](#supported-hardware).
+<p>
+  <img src="docs/screenshots/owly-kde-light.png" width="340" alt="Owly KDE con el tema claro de Plasma">
+  <img src="docs/screenshots/owly-kde-dark.png" width="340" alt="Owly KDE con el tema oscuro de Plasma">
+</p>
 
-## Install
+*Interfaz real renderizada en Plasma con dispositivos simulados para las capturas.*
 
-<details>
-<summary>Arch/Omarchy</summary>
+## Qué incluye
 
-If using Omarchy, you can install Owly together with [omdrop](https://github.com/netmojo-systems/omdrop-plugin) to get it in your bar:
+- Icono de panel y vista desplegable; también admite colocación en el escritorio.
+- Colores, controles, tipografía, iconos y espaciado integrados con el tema de Plasma.
+- Búsqueda de dispositivos Apple cercanos y selección del destinatario.
+- Selección de varios archivos o arrastre al desplegable.
+- Solicitudes de recepción con aceptación o rechazo explícitos.
+- Progreso y cancelación de envíos, notificaciones e historial de transferencias.
+- Carpeta de destino, nombre visible y duración de sesión configurables.
+- Diagnóstico de la tarjeta y aviso cuando AirDrop necesita interrumpir el Wi-Fi.
 
-```sh
-# Install Omdrop:
-omarchy plugin add https://github.com/netmojo-systems/omdrop-plugin.git
+La interfaz utiliza los comandos existentes de Owly con eventos `--json`.
+El protocolo, las transferencias y la gestión de la radio siguen en los crates
+originales de Rust. La compatibilidad depende de la tarjeta Wi-Fi; consulta
+[el hardware soportado](#hardware-soportado).
 
-# Install Owly (omdrop-owl):
-yay -S omdrop-owl
-```
+## Instalación
 
-If you're just using Arch, or don't want the UI, you can just install the CLI:
+Requiere **KDE Plasma 6**, **Qt 6.6 o posterior**, **Rust 1.88 o posterior**,
+un compilador C++17 y CMake. Para compilar el widget hacen falta los archivos
+de desarrollo de Qt Core, Gui, Qml, Quick y DBus. En ejecución necesita los
+módulos QML de Plasma Components, Plasma Extras, Kirigami y Qt Quick Dialogs.
 
-```sh
-yay -S owly
-```
-
-</details>
-
-<details>
-<summary>NixOS</summary>
-
-```nix
-inputs.owly.url = "github:t4t5/owly";
-```
-
-```nix
-imports = [ inputs.owly.nixosModules.default ];
-services.owly.enable = true;
-services.owly.settings = { allow_untested = true; };
-```
-
-</details>
-
-<details>
-<summary>Debian/Ubuntu</summary>
-
-Download the `.deb` from the [releases page](https://github.com/t4t5/owly/releases) and run:
+### 1. Obtener el fork
 
 ```sh
-sudo apt install ./owly_*_amd64.deb     # Debian 12, Ubuntu 22.04 and newer
+git clone https://github.com/Eirom16/owly-kde.git
+cd owly-kde
 ```
 
-</details>
+### 2. Instalar el servicio de Owly
 
-<details>
-<summary>Fedora</summary>
-
-Download the `.rpm` from the [releases page](https://github.com/t4t5/owly/releases) and run:
-
-```sh
-sudo dnf install ./owly-*.x86_64.rpm    # Fedora 44 and newer
-```
-
-</details>
-
-<details>
-<summary>From source</summary>
-
-Requires Rust 1.88 or newer:
+Si ya tienes un `owlyd` compatible instalado, puedes pasar al siguiente paso.
+Para instalarlo desde este checkout:
 
 ```sh
 cargo build --release --locked -p owlyd -p owly-cli
 sudo packaging/install.sh owly
-sudo systemctl daemon-reload && sudo nmcli general reload conf
+sudo systemctl daemon-reload
+sudo systemctl enable --now owlyd
 ```
 
-</details>
+Si utilizas NetworkManager, recarga también su configuración después de la
+primera instalación con `sudo nmcli general reload conf`.
 
-## Usage
-
-Start the radio in your terminal:
+### 3. Instalar el widget
 
 ```sh
-owly radio up
+bash plasma/install.sh
 ```
 
-Then, in another terminal:
+El instalador compila e instala el widget para tu usuario y deja la CLI con
+soporte gráfico en `~/.local/bin/owly`. Después abre **Editar panel → Añadir
+elementos gráficos**, busca **Owly KDE — AirDrop** y arrástralo al panel.
+Para actualizar, vuelve a ejecutar el instalador. Si el widget estaba abierto,
+retíralo y vuelve a añadirlo para cargar su biblioteca actualizada.
 
-```sh
-# To receive files:
-owly receive --dir ~/Downloads
+También se genera `target/plasma/io.github.eirom16.owlykde.plasmoid`, instalable
+desde **Añadir elementos gráficos → Instalar desde archivo local**. Incluye
+una biblioteca nativa y debe compilarse en el sistema donde se utilizará.
+Instalar únicamente ese archivo no instala la CLI ni el servicio.
 
-# To send files:
-owly browse    # (find nearby AirDrop receivers)
-owly send --to "Jane's iPhone" photo.jpg
-```
+Consulta [la documentación del widget](plasma/README.md) para compilarlo por
+separado, configurar sus rutas o ejecutar las vistas previas.
 
-Make sure you set your phone's Airdrop setting to "Everyone for 10 minutes".
+## Compartir archivos
 
-## Supported hardware
+1. Abre Owly KDE desde el panel y pulsa **Activar**. La sesión predeterminada
+   dura diez minutos; puedes cambiarla en la configuración.
+2. En el dispositivo Apple, desbloquea la pantalla y habilita AirDrop para
+   **Todos durante 10 minutos**.
+3. Para enviar, selecciona o arrastra archivos, elige un dispositivo cercano
+   y pulsa **Enviar**. Usa el botón de búsqueda para actualizar la lista.
+4. Para recibir, mantén habilitadas las solicitudes y responde **Aceptar** o
+   **Rechazar** cuando aparezca una. El receptor limita la respuesta a 15 segundos.
 
-**Status:** ✅ both directions work, ⚠️ unreliable (see [known issues](#known-issues)), ❌ fails, ❓ untested
+**Descargas** abre la carpeta de destino. **Actividad** muestra las últimas
+transferencias completadas durante la vida de esa instancia del widget.
+Los enlaces recibidos se muestran como texto; no se abren automáticamente.
 
-**Modes:** *Shared* keeps Wi-Fi connected; *Exclusive* and *Active monitor* turn it off while the radio is up (see [why?](#modes))
+Cerrar el desplegable mantiene activa la sesión. Al desactivar, expirar el
+plazo o retirar el widget, la CLI libera la radio mediante el servicio existente.
+En tarjetas que usan modo exclusivo, el Wi-Fi se desconecta temporalmente.
+La interfaz lo indica antes de activar la sesión.
+
+## Hardware soportado
+
+La compatibilidad y los informes de esta tabla proceden del motor de Owly.
+El widget no cambia las capacidades de la tarjeta.
+
+**Estado:** ✅ funciona en ambos sentidos; ⚠️ poco fiable; ❌ falla; ❓ sin probar.
+**Shared** conserva el Wi-Fi; **Exclusive** y **Active monitor** lo interrumpen
+mientras la radio está activa.
 
 <!-- hardware-table:start -->
 <!-- Generated by `cargo xtask hardware` from hardware/ and crates/owly-radio/drivers.toml: edit those, not this table. -->
@@ -139,75 +141,78 @@ Make sure you set your phone's Airdrop setting to "Everyone for 10 minutes".
 
 <!-- hardware-table:end -->
 
-One card name can cover chips that behave differently, so a report from a machine, PCI ID (`lspci -nn`) or kernel not listed here helps too.
-
-### Checking your card
+### Diagnóstico y problemas conocidos
 
 ```sh
 owly doctor
-```
-
-This says which mode the card runs in, what's in the way (an AP on the wrong channel, a missing `hostapd`), and what's known to go wrong on it.
-
-
-### Adding your card
-
-```sh
 owly test-card
 ```
 
-This walks you through a photo each way with an iPhone, watches Wi-Fi for five minutes, and writes a JSON report. Open a pull request adding it to [`hardware/reports/`](hardware/README.md), or attach it to an issue.
+`doctor` explica el modo disponible y qué impide activar la radio. `test-card`
+guía una prueba con un iPhone y genera un informe para el
+[registro de hardware](hardware/README.md).
 
-A card with no entry in `drivers.toml` gets the `*` entry, which runs only with `allow_untested = true`. Cards that can inject frames from a monitor interface while connected to Wi-Fi are the likely candidates for shared mode. Most mac80211 drivers can, but how they behave around it varies, which is what `drivers.toml` records. To try other settings, copy the `*` entry to `/etc/owly/drivers.toml` under your driver's name (`basename $(readlink /sys/class/net/<wifi>/device/driver)`) and change it there.
+- El modo compartido necesita que el punto de acceso esté en el canal **6, 44 o 149**.
+- El cortafuegos debe permitir **TCP 8771 en `awdl0`** para recibir.
+- El modo exclusivo en el canal 6 puede ser lento; algunas tarjetas Intel lo necesitan.
+- La recepción funciona en modo **Todos**. **Solo contactos** requiere una identidad de Apple que el motor no implementa.
 
-## Modes
+La configuración de la radio está en `/etc/owly/radio.toml`. Las reglas por
+driver están en [`drivers.toml`](crates/owly-radio/drivers.toml), y se pueden
+sobrescribir en `/etc/owly/drivers.toml`. Consulta el
+[proyecto original](https://github.com/t4t5/owly#configuration) para las opciones
+avanzadas y los detalles de sus modos de radio.
 
-**Shared.** Wi-Fi stays connected, and AWDL shares the AP's channel, which has to be **6, 44 or 149**. Owly injects frames through a monitor interface with the station's MAC, and advertises only the phone's slots on that channel. The station ACKs the phone's frames.
+## Uso desde terminal
 
-**Exclusive.** For cards that can't inject while connected, such as every Intel card tested. Wi-Fi is down while the radio is up, and comes back when it's given back. An ad-hoc cell on AWDL's BSSID takes the station's place to ACK the phone's frames, or a hidden AP (hostapd) on cards with no ad-hoc mode. It tries channels 44, 149 and 6 in that order, of those the card may transmit on, since an iPhone gives AWDL more slots on 5 GHz. Intel cards go straight to 6, the only channel where a phone has used their cell.
+La CLI sigue disponible. Mantén la radio activa en una terminal y utiliza otra
+para las transferencias:
 
-**Active monitor.** For cards with neither, such as the MediaTek MT7612U and MT7921: an active monitor carrying the station's MAC ACKs in place of the cell.
-
-A USB adapter can run exclusive mode as a second card while the built-in one stays connected: set `station` to the adapter in `/etc/owly/radio.toml` and disconnect it (`nmcli device disconnect <adapter>`).
-
-## Configuration
-
-`/etc/owly/radio.toml`, all optional:
-
-```toml
-station = "wlan0"        # the Wi-Fi interface to use; else the first station
-allow_untested = false   # run on a card the quirks table doesn't mark tested
-reconnect_after = true   # overrides the driver's reconnect_after_monitor
-country = "DE"           # exclusive modes: the regulatory domain to ask for
-channels = [6]           # exclusive modes: overrides the driver's channel order
-aggregation = true       # overrides the driver's rx_ampdu: accept the phone's Block Ack session
-tx_rate = "mcs7"         # the data frame rate
-hostapd = "/usr/sbin/hostapd" # for a hidden AP, on cards with no ad-hoc mode; else found on PATH
-tx_amsdu = true          # send unicast as A-MSDUs where the peer takes them
+```sh
+owly radio up
+# En otra terminal:
+owly receive --dir ~/Downloads
+owly browse
+owly send --to "Jane's iPhone" photo.jpg
 ```
 
-What Owly does on each Wi-Fi driver comes from [`crates/owly-radio/drivers.toml`](crates/owly-radio/drivers.toml). `/etc/owly/drivers.toml`, in the same format, is read over it, so you can try settings for a new card without rebuilding.
+El widget administra su propia sesión: no es necesario ejecutar `radio up`
+por separado al usar la interfaz gráfica.
 
+## Desarrollo y pruebas
 
-## Known issues
+```sh
+# Motor y adaptador de eventos de la CLI
+cargo test --locked -p owly-cli
+cargo clippy --locked -p owly-cli --all-targets -- -D warnings
 
-`owly doctor` lists what's known to go wrong on your card. Beyond that:
+# Adaptador Qt: sin tocar la radio ni la red
+just plasma-check
 
-- **Shared mode needs your AP on channel 6, 44 or 149.** On any other channel, the radio won't come up, and `owly doctor` says so.
-- **The firewall can block the receiver**, so the phone never sees this computer. Allow TCP 8771 on `awdl0` (Omdrop: `omdrop firewall install`).
-- **Exclusive mode is slow on channel 6**, where Intel cards and others that refuse a 5 GHz cell run, since AWDL there gets few of the iPhone's slots: a 2.4 MB photo takes 10–17 s on an AX201.
+# Comprobaciones originales del motor
+just ci
+```
 
-## How it works
+Las pruebas del adaptador simulan la CLI para comprobar solicitudes, recepción,
+envío, cancelación, argumentos de archivos y liberación de sesiones. La prueba
+opcional de libplasma carga el paquete completo; los detalles están en
+[`plasma/README.md`](plasma/README.md#arquitectura-y-comprobaciones).
+El workflow **Plasma** compila el widget y ejecuta las pruebas Qt en GitHub Actions.
+La validación de una transferencia real requiere un dispositivo Apple y una
+tarjeta compatible.
 
-AirDrop runs over AWDL, a Wi-Fi link Apple devices use to talk to each other directly. Owly comes in two halves:
+El código gráfico está en [`plasma/`](plasma/). El motor se organiza en
+`owly-airdrop` (AirDrop), `owly-awdl` (AWDL), `owly-radio` (hardware), `owlyd`
+(servicio del sistema) y `owly-cli` (cliente). La documentación técnica del
+protocolo continúa en [`docs/SPEC.md`](docs/SPEC.md).
 
-- **`owlyd`**, a small system service, takes over your Wi-Fi card, runs AWDL on it, and hands the resulting `awdl0` network interface to the app that asked for it. When the app is done, or crashes, owlyd gives your Wi-Fi back.
-- **AirDrop itself** (`owly receive` or Omdrop) runs as your user, not as root, and talks over `awdl0` like any other network.
+## Créditos y licencia
 
-The pieces are Rust crates you can use in other projects: `owly-awdl` (AWDL), `owly-airdrop` (AirDrop) and `owly-radio` (the Wi-Fi card on Linux). [docs/SPEC.md](docs/SPEC.md) describes the protocol they implement. To add a new kind of radio, such as an ESP32 over USB, implement `owly-awdl`'s `Air` trait if it only sends and receives Wi-Fi frames, or `owly-radio`'s `Backend` trait if it runs AWDL itself.
+Owly KDE es un fork independiente mantenido en
+[Eirom16/owly-kde](https://github.com/Eirom16/owly-kde), basado en
+[t4t5/owly](https://github.com/t4t5/owly). El motor de AirDrop, AWDL y radio,
+así como los datos de compatibilidad, pertenecen a sus autores y colaboradores
+originales. Este fork añade la experiencia gráfica para KDE Plasma.
 
-## Development
-
-To try it with a phone, run `just radio` in one terminal (it installs owlyd first when it's missing or out of date), then `just receive` or `just send` in another. With no arguments, `just send` sends a test photo, `tests/photo.png`.
-
-The AirDrop tests run sender and receiver in a user network namespace (`unshare -rn`), so they need no root, but do need unprivileged user namespaces. `just install` installs a development build the way the packages lay it out, and `just uninstall` removes it. `packaging/arch/*/PKGBUILD` build packages from the checkout (`makepkg -si` there), and `packaging/package.sh deb` or `rpm` builds owly's `.deb` or `.rpm`.
+Código bajo licencia [MIT](LICENSE). Los nombres de los servicios D-Bus y la
+configuración del motor se conservan para mantener la compatibilidad con Owly.

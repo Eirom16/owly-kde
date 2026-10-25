@@ -1,0 +1,3 @@
+module Owly.Backend
+plugin owlybackend
+classname OwlyPlugin

@@ -42,6 +42,9 @@ const RECEIVE_PORT: u16 = 8771;
 /// Where and as whom: the flags every AirDrop command takes.
 #[derive(clap::Args)]
 pub struct On {
+    /// Stream newline-delimited JSON events for graphical clients.
+    #[arg(long)]
+    json: bool,
     /// The interface to use, such as awdl0.
     #[arg(long, short, default_value = "awdl0")]
     iface: String,
@@ -137,16 +140,54 @@ pub async fn receive(bus: Option<&str>, args: ReceiveArgs) -> Result<ExitCode, S
 }
 
 /// `owly browse`.
-pub async fn browse(args: BrowseArgs) -> Result<ExitCode, String> {
+pub async fn browse(bus: Option<&str>, args: BrowseArgs) -> Result<ExitCode, String> {
     async {
         let (iface, name) = args.on.resolve()?;
         let _advert = advertise(args.no_ble).await;
         let sender = Sender::new(sender::Config::new(name, random_service_id()?))?;
-        browse_receivers(&iface, &sender, Duration::from_secs(args.seconds), |r| {
-            println!("{:<14} {:?} ({})", r.instance, r.name, r.addr);
+        let listed = |r: &Listed| {
+            if args.on.json {
+                crate::machine::emit(
+                    serde_json::json!({"event": "device", "id": r.instance, "name": r.name}),
+                );
+            } else {
+                println!("{:<14} {:?} ({})", r.instance, r.name, r.addr);
+            }
             false
-        })
-        .await?;
+        };
+        let limit = Duration::from_secs(args.seconds);
+        let mdns = browse_receivers(&iface, &sender, limit, listed);
+        // The same direct /Discover path as send: Apple peers need not
+        // multicast their mDNS records onto awdl0 (DISC-5).
+        let peers = async {
+            let Ok(lease) = Lease::find(bus, &iface.name).await else {
+                return;
+            };
+            let deadline = tokio::time::Instant::now() + limit;
+            let mut seen = std::collections::HashSet::new();
+            while tokio::time::Instant::now() < deadline {
+                for mac in lease.peers().await {
+                    if seen.contains(&mac) {
+                        continue;
+                    }
+                    let addr = SocketAddrV6::new(mac.link_local(), AIRDROP_PORT, 0, iface.index);
+                    if let Ok(Ok(Some(receiver))) =
+                        tokio::time::timeout(Duration::from_secs(2), sender.discover(addr)).await
+                    {
+                        seen.insert(mac);
+                        listed(&Listed {
+                            instance: mac.to_string(),
+                            name: receiver.computer_name,
+                            addr,
+                            flags: RECEIVER_FLAGS | SUPPORTS_DVZIP,
+                        });
+                    }
+                }
+                tokio::time::sleep(Duration::from_millis(500)).await;
+            }
+        };
+        let (result, _) = tokio::join!(mdns, tokio::time::timeout(limit, peers));
+        result?;
         Ok(ExitCode::SUCCESS)
     }
     .await
@@ -169,6 +210,7 @@ async fn send_inner(bus: Option<&str>, args: SendArgs) -> io::Result<ExitCode> {
         files,
     } = args;
     let (iface, name) = on.resolve()?;
+    let json = on.json;
     let payload = match (url.is_empty(), files.is_empty()) {
         (false, true) => Payload::Urls(url),
         (true, false) => Payload::Files(
@@ -220,6 +262,12 @@ async fn send_inner(bus: Option<&str>, args: SendArgs) -> io::Result<ExitCode> {
     let printer = tokio::spawn(async move {
         while let Some(event) = updates.recv().await {
             match event {
+                Event::Accepted if json => {
+                    crate::machine::emit(serde_json::json!({"event": "accepted"}))
+                }
+                Event::Progress(p) if json => crate::machine::emit(
+                    serde_json::json!({"event": "progress", "sent": p.sent, "total": p.total}),
+                ),
                 Event::Accepted => eprintln!("accepted"),
                 Event::Progress(p) => eprint!("\r{} / {} bytes", p.sent, p.total),
             }
@@ -232,15 +280,27 @@ async fn send_inner(bus: Option<&str>, args: SendArgs) -> io::Result<ExitCode> {
     let _ = printer.await;
     Ok(match outcome {
         Outcome::Delivered => {
-            println!("delivered");
+            if json {
+                crate::machine::emit(serde_json::json!({"event": "delivered"}));
+            } else {
+                println!("delivered");
+            }
             ExitCode::SUCCESS
         }
         Outcome::Declined => {
-            println!("declined");
+            if json {
+                crate::machine::emit(serde_json::json!({"event": "declined"}));
+            } else {
+                println!("declined");
+            }
             ExitCode::from(1)
         }
         Outcome::Failed(reason) => {
-            println!("failed: {reason}");
+            if json {
+                crate::machine::emit(serde_json::json!({"event": "failed", "reason": reason}));
+            } else {
+                println!("failed: {reason}");
+            }
             ExitCode::from(2)
         }
     })
@@ -598,6 +658,11 @@ async fn run_receiver(
         "receiving as {name:?} ({service_id}) on [{}]:{port}, flags {flags:#x}",
         iface.addr
     );
+
+    if args.on.json {
+        crate::machine::emit(serde_json::json!({"event": "ready"}));
+        return crate::machine::receive(events).await;
+    }
 
     let mut stdin = tokio::io::BufReader::new(tokio::io::stdin()).lines();
     loop {

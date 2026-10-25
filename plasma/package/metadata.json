@@ -1,0 +1,18 @@
+{
+    "KPlugin": {
+        "Id": "io.github.eirom16.owlykde",
+        "Name": "Owly KDE — AirDrop",
+        "Description": "Envía y recibe archivos con dispositivos Apple desde el panel de Plasma",
+        "Icon": "network-wireless",
+        "Version": "0.1.0",
+        "License": "MIT",
+        "Category": "Connectivity",
+        "Website": "https://github.com/Eirom16/owly-kde",
+        "Authors": [{ "Name": "Owly contributors" }]
+    },
+    "KPackageStructure": "Plasma/Applet",
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-NotificationArea": true,
+    "X-Plasma-NotificationAreaCategory": "Hardware",
+    "X-Plasma-FormFactors": ["desktop", "horizontal", "vertical"]
+}

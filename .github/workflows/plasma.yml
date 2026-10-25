@@ -1,0 +1,29 @@
+name: Plasma
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  widget:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - name: Install build dependencies
+        run: pacman -Syu --noconfirm --needed git cmake ninja qt6-base qt6-declarative ki18n python
+      - uses: actions/checkout@v4
+      - name: Build the widget and Qt adapter tests
+        run: |
+          cmake -S plasma -B target/plasma -G Ninja -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build target/plasma --parallel 2
+      - name: Test without a radio
+        run: ctest --test-dir target/plasma --output-on-failure
+      - uses: actions/upload-artifact@v4
+        with:
+          name: owly-kde-plasmoid-archlinux
+          path: target/plasma/io.github.eirom16.owlykde.plasmoid
