@@ -69,7 +69,7 @@ El instalador compila e instala el widget para tu usuario y deja la CLI con
 soporte gráfico en `~/.local/bin/owly`. Después abre **Editar panel → Añadir
 elementos gráficos**, busca **Owly KDE — AirDrop** y arrástralo al panel.
 Para actualizar, vuelve a ejecutar el instalador. Si el widget estaba abierto,
-retíralo y vuelve a añadirlo para cargar su biblioteca actualizada.
+cierra sesión y vuelve a entrar para cargar la biblioteca nativa actualizada.
 
 También se genera `target/plasma/io.github.eirom16.owlykde.plasmoid`, instalable
 desde **Añadir elementos gráficos → Instalar desde archivo local**. Incluye
@@ -91,7 +91,8 @@ separado, configurar sus rutas o ejecutar las vistas previas.
    **Rechazar** cuando aparezca una. El receptor limita la respuesta a 15 segundos.
 
 **Descargas** abre la carpeta de destino. **Actividad** muestra las últimas
-transferencias completadas durante la vida de esa instancia del widget.
+transferencias y errores durante la vida de esa instancia del widget. Los
+detalles de los errores se pueden seleccionar y copiar para diagnosticar un fallo.
 Los enlaces recibidos se muestran como texto; no se abren automáticamente.
 
 Cerrar el desplegable mantiene activa la sesión. Al desactivar, expirar el

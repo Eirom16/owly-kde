@@ -263,11 +263,27 @@ void Backend::sendFiles(const QString &target, const QVariantList &urls) {
     paths << file.absoluteFilePath();
   }
   dismissError();
+  QString receiverName;
+  for (const auto &value : m_state["devices"].toList()) {
+    const auto device = value.toMap();
+    if (device["id"].toString() == target) {
+      receiverName = device["name"].toString();
+      break;
+    }
+  }
+  if (receiverName.isEmpty()) {
+    fail(tr("El dispositivo ya no está en la lista. Busca y selecciónalo de "
+            "nuevo."));
+    return;
+  }
   set("progress", -1.0);
   set("sending", true);
-  set("notice", tr("Esperando a que el dispositivo acepte…"));
+  set("notice", tr("Localizando de nuevo el dispositivo…"));
   auto args = QStringList{"send"} + identityArgs();
-  args << (target.count(':') == 5 ? "--mac" : "--to") << target << "--";
+  // Discovery IDs are snapshots. In particular an iPhone may change its
+  // AWDL address between browsing and sending. Resolve its advertised name
+  // through the CLI's normal mDNS/AWDL lookup instead of pinning the old MAC.
+  args << "--to" << receiverName << "--";
   args += paths;
   m_sender = launch("send", args, 300000);
 }
@@ -329,7 +345,14 @@ void Backend::event(const QString &role, const QJsonObject &object) {
       set("devices", devices);
     }
   } else if (role == "send") {
-    if (type == "progress") {
+    if (type == "stage") {
+      const auto stage = object["stage"].toString();
+      if (stage == "discovering")
+        set("notice", tr("Localizando de nuevo el dispositivo…"));
+      else if (stage == "preparing")
+        set("notice",
+            tr("Preparando archivos y solicitando la transferencia…"));
+    } else if (type == "progress") {
       const double total = object["total"].toDouble();
       set("progress", total > 0
                           ? qBound(0.0, object["sent"].toDouble() / total, 1.0)
@@ -472,7 +495,13 @@ void Backend::notify(const QString &title, const QString &body) {
   QDBusConnection::sessionBus().asyncCall(message);
 }
 
-void Backend::fail(const QString &message) { set("error", message); }
+void Backend::fail(const QString &message) {
+  if (message.isEmpty())
+    return;
+  if (m_state["error"].toString() != message)
+    record(tr("Error de Owly"), message, "dialog-error");
+  set("error", message);
+}
 void Backend::dismissError() { set("error", QString{}); }
 void Backend::openDownloads() {
   QDesktopServices::openUrl(QUrl::fromLocalFile(m_folder));

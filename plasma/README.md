@@ -19,12 +19,13 @@ bash plasma/install.sh
 
 Compila la CLI actualizada y el adaptador de presentación; instala la CLI en
 `~/.local/bin/owly` y el plasmoide en el directorio de datos de tu usuario.
-Después: **Editar panel → Añadir elementos gráficos → Owly — AirDrop**.
-Para actualizar, vuelve a ejecutar el mismo comando y retira y vuelve a añadir
-el widget si estaba abierto; Plasma puede conservar la biblioteca anterior en memoria.
+Después: **Editar panel → Añadir elementos gráficos → Owly KDE — AirDrop**.
+Para actualizar, vuelve a ejecutar el mismo comando. Si el widget estaba abierto,
+cierra sesión y vuelve a entrar: Plasma puede conservar la biblioteca nativa
+anterior en memoria.
 
 `owlyd` y su política de autorización se instalan mediante el
-[procedimiento habitual de Owly](../README.md#install). El instalador del widget
+[procedimiento habitual de Owly](../README.md#instalación). El instalador del widget
 no modifica servicios, reglas de cortafuegos, configuración de red ni el panel.
 El widget muestra el diagnóstico existente si falta alguno de esos requisitos.
 
@@ -51,7 +52,8 @@ la de este checkout, con soporte para los eventos `--json`.
 3. Para recibir, cada solicitud muestra quién envía y qué ofrece. Acepta o
    rechaza antes del plazo de 15 segundos que ya establece el receptor.
 4. **Descargas** abre la carpeta de destino. **Actividad** muestra las últimas
-   veinte transferencias completadas durante la vida de esa instancia del widget.
+   veinte transferencias o errores durante la vida de esa instancia del widget.
+Los detalles se pueden seleccionar y copiar para diagnosticar un fallo de envío.
 
 Cerrar el desplegable mantiene la sesión activa. Desactivar, agotar el plazo
 o retirar el widget libera la radio mediante la CLI y el servicio existentes.

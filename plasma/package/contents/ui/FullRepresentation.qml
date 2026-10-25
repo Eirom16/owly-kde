@@ -365,7 +365,7 @@ PC.Page {
                         visible: view.session.history.length === 0
                         iconName: "view-history"
                         text: qsTr("Todo empieza con un archivo")
-                        explanation: qsTr("Las transferencias completadas aparecerán aquí durante esta sesión del widget.")
+                        explanation: qsTr("Las transferencias y los errores aparecerán aquí durante esta sesión del widget.")
                     }
                     Repeater {
                         model: view.session.history
@@ -392,11 +392,15 @@ PC.Page {
                                         font.bold: true
                                         wrapMode: Text.Wrap
                                     }
-                                    PC.Label {
+                                    PC.TextArea {
                                         Layout.fillWidth: true
                                         text: historyRow.modelData.detail
-                                        textFormat: Text.PlainText
-                                        wrapMode: Text.WrapAnywhere
+                                        textFormat: TextEdit.PlainText
+                                        wrapMode: TextEdit.WrapAnywhere
+                                        readOnly: true
+                                        selectByMouse: true
+                                        padding: 0
+                                        background: null
                                     }
                                 }
                                 PE.DescriptiveLabel { text: historyRow.modelData.time }

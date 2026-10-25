@@ -45,7 +45,11 @@ private slots:
     QFile log(logPath);
     QVERIFY(log.open(QIODevice::ReadOnly));
     const auto calls = log.readAll();
-    QVERIFY(calls.contains("--mac"));
+    QVERIFY(calls.contains("--to"));
+    QVERIFY(calls.contains("iPhone de prueba"));
+    QVERIFY(!calls.contains("--mac"));
+    // A cached discovery MAC is only a row ID, never a pinned endpoint.
+    QVERIFY(!calls.contains("aa:bb:cc:dd:ee:ff"));
     QVERIFY(calls.contains("$(touch nope)"));
     QVERIFY(calls.contains("\"--\""));
 
@@ -72,6 +76,7 @@ private slots:
     QTRY_VERIFY(backend.state()["available"].toBool());
     backend.start();
     QTRY_VERIFY(backend.state()["active"].toBool());
+    QTRY_VERIFY(!backend.state()["devices"].toList().isEmpty());
     backend.sendFiles("target", {QUrl("https://example.com/test.jpg")});
     QVERIFY(!backend.state()["sending"].toBool());
     QVERIFY(!backend.state()["error"].toString().isEmpty());
@@ -79,11 +84,15 @@ private slots:
     QVERIFY(file.open(QIODevice::WriteOnly));
     file.write("test");
     file.close();
-    backend.sendFiles("target", {QUrl::fromLocalFile(file.fileName())});
+    backend.sendFiles("aa:bb:cc:dd:ee:ff",
+                      {QUrl::fromLocalFile(file.fileName())});
     QVERIFY(backend.state()["sending"].toBool());
     backend.cancelSend(); // Also exercises cancellation before QProcess::start.
     QTRY_VERIFY(!backend.state()["sending"].toBool());
-    QVERIFY(backend.state()["history"].toList().isEmpty());
+    QCOMPARE(backend.state()["history"].toList().size(), 1);
+    QCOMPARE(
+        backend.state()["history"].toList().first().toMap()["icon"].toString(),
+        QString("dialog-error"));
     backend.stop();
     QTRY_VERIFY(!backend.state()["active"].toBool());
     qunsetenv("OWLY_TEST_SLOW");
@@ -96,6 +105,35 @@ private slots:
     QVERIFY(!backend.state()["error"].toString().isEmpty());
     backend.start();
     QVERIFY(!backend.state()["starting"].toBool());
+  }
+
+  void failedSendRemainsInActivity() {
+    QTemporaryDir dir;
+    qputenv("OWLY_TEST_SEND_FAIL", "1");
+    Backend backend;
+    backend.configure(FIXTURE_PATH, dir.path(), "", 10);
+    QTRY_VERIFY(backend.state()["available"].toBool());
+    backend.start();
+    QTRY_VERIFY(!backend.state()["devices"].toList().isEmpty());
+    QFile file(dir.filePath("photo.jpg"));
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write("test");
+    file.close();
+    backend.sendFiles("aa:bb:cc:dd:ee:ff",
+                      {QUrl::fromLocalFile(file.fileName())});
+    QTRY_VERIFY(!backend.state()["sending"].toBool());
+    QVERIFY(
+        backend.state()["error"].toString().contains("no AWDL peer answered"));
+    const auto history = backend.state()["history"].toList();
+    QCOMPARE(history.size(), 1);
+    QVERIFY(history.first().toMap()["detail"].toString().contains(
+        "no AWDL peer answered"));
+    backend.dismissError();
+    QVERIFY(backend.state()["error"].toString().isEmpty());
+    QCOMPARE(backend.state()["history"].toList(), history);
+    backend.stop();
+    QTRY_VERIFY(!backend.state()["active"].toBool());
+    qunsetenv("OWLY_TEST_SEND_FAIL");
   }
 };
 

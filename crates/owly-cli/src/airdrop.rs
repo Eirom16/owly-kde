@@ -221,6 +221,9 @@ async fn send_inner(bus: Option<&str>, args: SendArgs) -> io::Result<ExitCode> {
         ),
         _ => return Err(io::Error::other("give either files or --url, not both")),
     };
+    if json {
+        crate::machine::emit(serde_json::json!({"event": "stage", "stage": "discovering"}));
+    }
     let _advert = advertise(no_ble).await;
     let sender = Sender::new(sender::Config::new(name, random_service_id()?))?;
     let target = match mac {
@@ -258,6 +261,9 @@ async fn send_inner(bus: Option<&str>, args: SendArgs) -> io::Result<ExitCode> {
         }
     };
     eprintln!("sending to {:?} at {}", target.name, target.addr);
+    if json {
+        crate::machine::emit(serde_json::json!({"event": "stage", "stage": "preparing"}));
+    }
     let (events, mut updates) = tokio::sync::mpsc::unbounded_channel();
     let printer = tokio::spawn(async move {
         while let Some(event) = updates.recv().await {

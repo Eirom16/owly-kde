@@ -49,6 +49,9 @@ elif command == "receive":
         if answer["accept"]:
             emit(event="received", id=answer["id"], paths=["/tmp/foto de vacaciones.jpg"])
 elif command == "send":
+    if os.environ.get("OWLY_TEST_SEND_FAIL"):
+        print("owly: no AWDL peer answered /Discover", file=sys.stderr, flush=True)
+        sys.exit(2)
     if os.environ.get("OWLY_TEST_SLOW"):
         time.sleep(30)
     emit(event="accepted")

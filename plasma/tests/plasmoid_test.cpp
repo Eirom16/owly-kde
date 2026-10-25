@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 // Load the whole package through Plasma, including its native QML plugin.
+#include <KPackage/Package>
+#include <KPackage/PackageLoader>
 #include <Plasma/Applet>
 #include <Plasma/Containment>
 #include <Plasma/Corona>
 #include <Plasma/PluginLoader>
 #include <PlasmaQuick/AppletQuickItem>
-#include <KPackage/PackageLoader>
-#include <KPackage/Package>
 #include <QDebug>
 #include <QFile>
 #include <QGuiApplication>
@@ -39,7 +39,8 @@ int main(int argc, char **argv) {
   themeConfig.close();
   iconConfig.close();
   TestCorona corona;
-  corona.setKPackage(KPackage::PackageLoader::self()->loadPackage("Plasma/Shell", "org.kde.plasma.desktop"));
+  corona.setKPackage(KPackage::PackageLoader::self()->loadPackage(
+      "Plasma/Shell", "org.kde.plasma.desktop"));
   auto *containment = corona.createContainment("org.kde.desktopcontainment");
   if (!containment)
     return 1;
@@ -57,7 +58,7 @@ int main(int argc, char **argv) {
   QQuickWindow window;
   window.setColor(dark ? QColor("#232629") : QColor("#eff0f1"));
   const QSize size = arguments.contains("--compact") ? QSize(48, 48)
-                    : arguments.contains("--small") ? QSize(360, 470)
+                     : arguments.contains("--small") ? QSize(360, 470)
                                                      : QSize(432, 650);
   window.resize(size);
   item->setParentItem(window.contentItem());
@@ -82,9 +83,10 @@ int main(int argc, char **argv) {
     auto *backend = item->property("backend").value<QObject *>();
     const auto state =
         backend ? backend->property("state").toMap() : QVariantMap{};
-    const bool loaded = (arguments.contains("--compact") ? item->compactRepresentationItem() : item->fullRepresentationItem()) &&
-                        state["active"].toBool() &&
-                        state["devices"].toList().size() == 2;
+    const bool loaded =
+        (arguments.contains("--compact") ? item->compactRepresentationItem()
+                                         : item->fullRepresentationItem()) &&
+        state["active"].toBool() && state["devices"].toList().size() == 2;
     std::fprintf(stderr, "Native plasmoid loaded: %s\n", loaded ? "yes" : "no");
     const auto args = app.arguments();
     const int capture = args.indexOf("--capture");
@@ -92,5 +94,17 @@ int main(int argc, char **argv) {
       window.grabWindow().save(args[capture + 1]);
     app.exit(loaded ? 0 : 3);
   });
+  if (arguments.contains("--history")) {
+    QTimer::singleShot(2200, &app, [&] {
+      auto *backend = item->property("backend").value<QObject *>();
+      if (backend)
+        QMetaObject::invokeMethod(
+            backend, "sendFiles", Q_ARG(QString, QString("unknown")),
+            Q_ARG(QVariantList,
+                  QVariantList{QUrl("https://example.invalid/test")}));
+      if (item->fullRepresentationItem())
+        item->fullRepresentationItem()->setProperty("page", 1);
+    });
+  }
   return app.exec();
 }
