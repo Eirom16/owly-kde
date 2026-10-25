@@ -7,6 +7,10 @@ Este fork de [Owly](https://github.com/t4t5/owly) está enfocado en KDE Plasma 6
 Conserva su motor de AirDrop y AWDL, y añade una interfaz nativa en QML con
 Plasma Components, Plasma Extras y Kirigami.
 
+**Primera versión preliminar:** [Owly KDE 0.1.1](https://github.com/Eirom16/owly-kde/releases/tag/kde-v0.1.1).
+Incluye código fuente y un widget precompilado para Arch/CachyOS x86_64 con Qt 6.12.
+Consulta los requisitos de cada descarga y el [historial de cambios](CHANGELOG.md).
+
 <p>
   <img src="docs/screenshots/owly-kde-light.png" width="340" alt="Owly KDE con el tema claro de Plasma">
   <img src="docs/screenshots/owly-kde-dark.png" width="340" alt="Owly KDE con el tema oscuro de Plasma">
