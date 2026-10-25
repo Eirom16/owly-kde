@@ -71,6 +71,10 @@ colores semánticos y espaciados proceden del sistema mediante Kirigami.
 No fija una paleta, fuente ni fondo propios. Las páginas de configuración
 emplean `Kirigami.FormLayout` y controles de escritorio.
 
+El [icono de AirDrop en SVG](package/contents/icons/owly-airdrop.svg) se muestra
+como máscara del color de texto de Plasma. El mismo archivo sirve para temas
+claros y oscuros; el instalador lo registra también en los iconos del usuario.
+
 Referencias de KDE: [propiedades del widget](https://develop.kde.org/docs/plasma/widget/properties/)
 y [API de Plasma 6](https://develop.kde.org/docs/plasma/widget/porting_kf6/).
 

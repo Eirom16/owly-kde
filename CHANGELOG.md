@@ -2,6 +2,13 @@
 
 La versión del widget KDE es independiente de la versión del motor de Owly.
 
+## 0.1.2 — En desarrollo
+
+- Nuevo icono SVG inspirado en AirDrop, con cuatro arcos abiertos y trazos redondeados.
+- El icono del panel y el encabezado siguen el color de texto del tema de Plasma,
+  incluidos los modos claro y oscuro.
+- El instalador registra también el icono en el tema de iconos del usuario.
+
 ## [0.1.1 — primera versión preliminar](https://github.com/Eirom16/owly-kde/releases/tag/kde-v0.1.1)
 
 Motor incluido en el código fuente: Owly 0.4.1.

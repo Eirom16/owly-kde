@@ -51,8 +51,7 @@ PC.Page {
     header: PE.PlasmoidHeading {
         contentItem: RowLayout {
             spacing: Kirigami.Units.largeSpacing
-            Kirigami.Icon {
-                source: "network-wireless"
+            AirDropIcon {
                 implicitWidth: Kirigami.Units.iconSizes.medium
                 implicitHeight: implicitWidth
             }

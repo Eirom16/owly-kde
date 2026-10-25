@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(owly-plasma VERSION 0.1.1 LANGUAGES CXX)
+project(owly-plasma VERSION 0.1.2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -22,6 +22,9 @@ add_custom_target(plasmoid ALL
     WORKING_DIRECTORY "${OWLY_PACKAGE}"
     DEPENDS owlybackend)
 install(DIRECTORY "${OWLY_PACKAGE}/" DESTINATION share/plasma/plasmoids/io.github.eirom16.owlykde)
+install(FILES package/contents/icons/owly-airdrop.svg
+    DESTINATION share/icons/hicolor/scalable/apps
+    RENAME io.github.eirom16.owlykde.svg)
 
 include(CTest)
 if(BUILD_TESTING)

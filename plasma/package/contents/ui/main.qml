@@ -14,7 +14,7 @@ PlasmoidItem {
     readonly property var session: controller.state
     readonly property bool busy: session.starting || session.stopping || session.sending
 
-    Plasmoid.icon: "network-wireless"
+    Plasmoid.icon: Qt.resolvedUrl("../icons/owly-airdrop.svg").toString()
     Plasmoid.status: session.active ? PlasmaCore.Types.ActiveStatus : PlasmaCore.Types.PassiveStatus
     Plasmoid.backgroundHints: PlasmaCore.Types.DefaultBackground
     toolTipMainText: "Owly KDE · AirDrop"
@@ -52,18 +52,18 @@ PlasmoidItem {
             onEntered: drag => { if (drag.hasUrls) root.expanded = true }
         }
         contentItem: Item {
-            Kirigami.Icon {
+            AirDropIcon {
+                id: panelIcon
                 anchors.centerIn: parent
-                width: Math.min(parent.width, parent.height)
+                width: Math.min(parent.width, parent.height, Kirigami.Units.iconSizes.smallMedium)
                 height: width
-                source: "network-wireless"
                 active: compact.hovered || root.expanded
                 opacity: root.session.active ? 1 : 0.65
             }
             Rectangle {
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                width: Math.max(Kirigami.Units.smallSpacing * 2, parent.width * 0.25)
+                anchors.right: panelIcon.right
+                anchors.bottom: panelIcon.bottom
+                width: Math.max(Kirigami.Units.smallSpacing, panelIcon.width * 0.25)
                 height: width
                 radius: width / 2
                 color: root.session.requests.length > 0 ? Kirigami.Theme.neutralTextColor : Kirigami.Theme.positiveTextColor
@@ -72,7 +72,7 @@ PlasmoidItem {
                 visible: root.session.active
             }
             PC.BusyIndicator {
-                anchors.fill: parent
+                anchors.fill: panelIcon
                 running: root.busy
                 visible: running
             }

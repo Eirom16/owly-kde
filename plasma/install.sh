@@ -18,6 +18,7 @@ cargo build --release --locked -p owly-cli
 cmake -S "$project_dir/plasma" -B "$build_dir" -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release
 cmake --build "$build_dir" --parallel 2
 install -Dm755 "$target_dir/release/owly" "$HOME/.local/bin/owly"
+install -Dm644 "$project_dir/plasma/package/contents/icons/owly-airdrop.svg" "$data_dir/icons/hicolor/scalable/apps/$widget_id.svg"
 mkdir -p "$data_dir/plasma/plasmoids"
 if [[ -f "$data_dir/plasma/plasmoids/$widget_id/metadata.json" ]]; then
     kpackagetool6 --type Plasma/Applet --upgrade "$build_dir/package"
