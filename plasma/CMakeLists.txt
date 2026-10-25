@@ -5,13 +5,15 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 find_package(Qt6 6.6 REQUIRED COMPONENTS Core Gui Qml Quick DBus)
+find_package(KF6KIO 6.0 REQUIRED)
 
-# Keep the native adapter inside the package: no global QML import path,
-# privileged install or restart of the user's shell is necessary.
+# Keep the native adapter inside the package: no global QML import path
+# or privileged install is necessary.
 set(OWLY_PACKAGE "${CMAKE_CURRENT_BINARY_DIR}/package")
 file(COPY package/ DESTINATION "${OWLY_PACKAGE}")
-add_library(owlybackend MODULE src/backend.cpp src/backend.h src/plugin.cpp)
-target_link_libraries(owlybackend PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::DBus)
+add_library(owlybackend MODULE src/backend.cpp src/backend.h src/plugin.cpp
+    src/filethumbnail.cpp src/filethumbnail.h)
+target_link_libraries(owlybackend PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::DBus KF6::KIOGui)
 target_compile_options(owlybackend PRIVATE -Wall -Wextra -Wpedantic)
 set_target_properties(owlybackend PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${OWLY_PACKAGE}/contents/ui/backend")
@@ -35,6 +37,10 @@ if(BUILD_TESTING)
     target_compile_definitions(backend-test PRIVATE FIXTURE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/tests/fake-owly.py")
     add_test(NAME backend COMMAND backend-test)
     set_tests_properties(backend PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+    add_executable(thumbnail-test tests/thumbnail_test.cpp src/filethumbnail.cpp src/filethumbnail.h)
+    target_link_libraries(thumbnail-test PRIVATE Qt6::Quick Qt6::Test KF6::KIOGui)
+    add_test(NAME thumbnail COMMAND thumbnail-test)
+    set_tests_properties(thumbnail PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
     add_executable(owly-preview tests/preview.cpp src/backend.cpp src/backend.h)
     target_link_libraries(owly-preview PRIVATE Qt6::Core Qt6::Gui Qt6::Quick Qt6::DBus KF6::I18nQml)
     target_compile_definitions(owly-preview PRIVATE
@@ -50,6 +56,7 @@ if(BUILD_TESTING)
             FIXTURE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/tests/fake-owly.py")
         add_dependencies(plasmoid-test plasmoid)
         add_test(NAME plasmoid-load COMMAND plasmoid-test)
-        set_tests_properties(plasmoid-load PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software")
+        add_test(NAME plasmoid-activity COMMAND plasmoid-test --history)
+        set_tests_properties(plasmoid-load plasmoid-activity PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software")
     endif()
 endif()

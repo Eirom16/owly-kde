@@ -10,6 +10,7 @@
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QMimeDatabase>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QUrl>
@@ -286,6 +287,7 @@ void Backend::sendFiles(const QString &target, const QVariantList &urls) {
   args << "--to" << receiverName << "--";
   args += paths;
   m_sender = launch("send", args, 300000);
+  m_sender->setProperty("paths", paths);
 }
 
 void Backend::cancelSend() { terminate(m_sender); }
@@ -363,7 +365,7 @@ void Backend::event(const QString &role, const QJsonObject &object) {
       m_sender->setProperty("delivered", true);
       set("notice", tr("Archivos enviados"));
       record(tr("Archivos enviados"), tr("La transferencia se completó"),
-             "document-send");
+             "document-send", m_sender->property("paths").toStringList());
       notify(tr("Archivos enviados"), tr("La transferencia se completó."));
     } else if (type == "declined") {
       m_sender->setProperty("handled", true);
@@ -397,7 +399,8 @@ void Backend::event(const QString &role, const QJsonObject &object) {
                                             : tr("Enlaces recibidos");
       // Links are displayed as plain text, never opened automatically.
       record(title, items.join('\n'),
-             type == "received" ? "folder-downloads" : "edit-link");
+             type == "received" ? "folder-downloads" : "edit-link",
+             type == "received" ? items : QStringList{});
       set("notice", title);
       notify(title, type == "received" ? tr("Guardados en %1").arg(m_folder)
                                        : items.join('\n'));
@@ -473,12 +476,26 @@ void Backend::finish(QProcess *process, const QString &role, int code) {
 }
 
 void Backend::record(const QString &title, const QString &detail,
-                     const QString &icon) {
+                     const QString &icon, const QStringList &paths) {
+  QVariantList files;
+  const QMimeDatabase mimeDatabase;
+  for (const auto &path : paths) {
+    const QFileInfo file(path);
+    // Transfer events carry filesystem paths, never user-supplied URL schemes.
+    if (!file.isAbsolute())
+      continue;
+    files << QVariantMap{
+        {"url", QUrl::fromLocalFile(file.absoluteFilePath())},
+        {"name", file.fileName()},
+        {"path", file.absoluteFilePath()},
+        {"icon", mimeDatabase.mimeTypeForFile(file).iconName()}};
+  }
   auto history = m_state["history"].toList();
   history.prepend(
       QVariantMap{{"title", title},
                   {"detail", detail},
                   {"icon", icon},
+                  {"files", files},
                   {"time", QDateTime::currentDateTime().toString("HH:mm")}});
   while (history.size() > 20)
     history.removeLast();
@@ -505,4 +522,28 @@ void Backend::fail(const QString &message) {
 void Backend::dismissError() { set("error", QString{}); }
 void Backend::openDownloads() {
   QDesktopServices::openUrl(QUrl::fromLocalFile(m_folder));
+}
+
+void Backend::openHistoryFile(const QUrl &url, bool folder) {
+  // Only recorded local transfers can launch an application on an explicit
+  // click.
+  if (!url.isLocalFile())
+    return;
+  bool recorded = false;
+  for (const auto &entry : m_state["history"].toList()) {
+    for (const auto &item : entry.toMap()["files"].toList())
+      recorded |= item.toMap()["url"].toUrl() == url;
+  }
+  if (!recorded)
+    return;
+  const QFileInfo file(url.toLocalFile());
+  if (!file.exists() || !file.isReadable()) {
+    fail(tr("El archivo ya no está disponible en su ubicación original: %1")
+             .arg(file.absoluteFilePath()));
+    return;
+  }
+  if (!QDesktopServices::openUrl(
+          folder ? QUrl::fromLocalFile(file.absolutePath()) : url))
+    fail(tr("No se pudo abrir %1 con la aplicación del sistema.")
+             .arg(file.fileName()));
 }

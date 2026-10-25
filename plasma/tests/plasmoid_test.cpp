@@ -8,9 +8,13 @@
 #include <Plasma/PluginLoader>
 #include <PlasmaQuick/AppletQuickItem>
 #include <QDebug>
+#include <QElapsedTimer>
 #include <QFile>
 #include <QGuiApplication>
 #include <QImage>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QPainter>
 #include <QQuickWindow>
 #include <QTemporaryDir>
 #include <QTimer>
@@ -21,12 +25,51 @@ public:
   QRect screenGeometry(uint) const override { return QRect(0, 0, 1024, 768); }
 };
 
+static int countReadyThumbnails(QQuickItem *item) {
+  if (!item)
+    return 0;
+  int count = item->objectName() == "historyThumbnail" &&
+                      item->property("ready").toBool()
+                  ? 1
+                  : 0;
+  for (auto *child : item->childItems())
+    count += countReadyThumbnails(child);
+  return count;
+}
+
 int main(int argc, char **argv) {
   QTemporaryDir config;
   qputenv("XDG_CONFIG_HOME", config.path().toUtf8());
   QGuiApplication app(argc, argv);
   app.setApplicationName("Owly Plasma Test");
   const auto arguments = app.arguments();
+  QTemporaryDir transfers;
+  const auto photoPath = transfers.filePath("Foto de vacaciones.png");
+  const auto documentPath = transfers.filePath("Notas del viaje.bin");
+  if (arguments.contains("--history")) {
+    QImage photo(256, 160, QImage::Format_RGB32);
+    QPainter painter(&photo);
+    QLinearGradient sky(0, 0, 0, 160);
+    sky.setColorAt(0, QColor("#5bb9e1"));
+    sky.setColorAt(1, QColor("#e8d7ab"));
+    painter.fillRect(photo.rect(), sky);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor("#fff4ce"));
+    painter.drawEllipse(QPoint(195, 40), 18, 18);
+    painter.setBrush(QColor("#34796e"));
+    painter.drawPolygon(QPolygon{{0, 160}, {80, 60}, {160, 160}});
+    painter.setBrush(QColor("#21575f"));
+    painter.drawPolygon(QPolygon{{80, 160}, {175, 80}, {256, 160}});
+    painter.end();
+    photo.save(photoPath);
+    QFile document(documentPath);
+    if (document.open(QIODevice::WriteOnly))
+      document.write("Owly preview fixture");
+    qputenv("OWLY_TEST_INCOMING", "1");
+    qputenv(
+        "OWLY_TEST_RECEIVED",
+        QJsonDocument(QJsonArray{photoPath}).toJson(QJsonDocument::Compact));
+  }
   const bool dark = arguments.contains("--dark");
   QFile themeConfig(config.filePath("plasmarc"));
   if (themeConfig.open(QIODevice::WriteOnly))
@@ -79,14 +122,27 @@ int main(int argc, char **argv) {
       });
     }
   });
-  QTimer::singleShot(3500, &app, [&] {
+  QElapsedTimer elapsed;
+  elapsed.start();
+  QTimer verification;
+  verification.setInterval(100);
+  QObject::connect(&verification, &QTimer::timeout, &app, [&] {
+    if (elapsed.elapsed() < 3500)
+      return;
     auto *backend = item->property("backend").value<QObject *>();
     const auto state =
         backend ? backend->property("state").toMap() : QVariantMap{};
+    const bool activityLoaded =
+        !arguments.contains("--history") ||
+        (state["history"].toList().size() == 2 &&
+         countReadyThumbnails(item->fullRepresentationItem()) == 2);
     const bool loaded =
+        activityLoaded &&
         (arguments.contains("--compact") ? item->compactRepresentationItem()
                                          : item->fullRepresentationItem()) &&
         state["active"].toBool() && state["devices"].toList().size() == 2;
+    if (!loaded && elapsed.elapsed() < 15000)
+      return;
     std::fprintf(stderr, "Native plasmoid loaded: %s\n", loaded ? "yes" : "no");
     const auto args = app.arguments();
     const int capture = args.indexOf("--capture");
@@ -94,14 +150,19 @@ int main(int argc, char **argv) {
       window.grabWindow().save(args[capture + 1]);
     app.exit(loaded ? 0 : 3);
   });
+  verification.start();
   if (arguments.contains("--history")) {
     QTimer::singleShot(2200, &app, [&] {
       auto *backend = item->property("backend").value<QObject *>();
-      if (backend)
+      if (backend) {
         QMetaObject::invokeMethod(
-            backend, "sendFiles", Q_ARG(QString, QString("unknown")),
-            Q_ARG(QVariantList,
-                  QVariantList{QUrl("https://example.invalid/test")}));
+            backend, "answer", Q_ARG(QString, QString("7")), Q_ARG(bool, true));
+        const QVariantList files{QUrl::fromLocalFile(photoPath),
+                                 QUrl::fromLocalFile(documentPath)};
+        QMetaObject::invokeMethod(backend, "sendFiles",
+                                  Q_ARG(QString, QString("aa:bb:cc:dd:ee:ff")),
+                                  Q_ARG(QVariantList, files));
+      }
       if (item->fullRepresentationItem())
         item->fullRepresentationItem()->setProperty("page", 1);
     });

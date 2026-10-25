@@ -4,6 +4,9 @@ La versión del widget KDE es independiente de la versión del motor de Owly.
 
 ## 0.1.2 — En desarrollo
 
+- Actividad muestra miniaturas y nombres de los archivos enviados y recibidos,
+  con apertura mediante la aplicación del sistema y acceso a la carpeta contenedora.
+- Los lotes permiten abrir cada archivo por separado; los errores conservan texto copiable.
 - Nuevo icono SVG inspirado en AirDrop, con cuatro arcos abiertos y trazos redondeados.
 - El icono del panel y el encabezado siguen el color de texto del tema de Plasma,
   incluidos los modos claro y oscuro.

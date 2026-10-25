@@ -47,7 +47,7 @@ elif command == "receive":
         answer = json.loads(line)
         log(answer)
         if answer["accept"]:
-            emit(event="received", id=answer["id"], paths=["/tmp/foto de vacaciones.jpg"])
+            emit(event="received", id=answer["id"], paths=json.loads(os.environ.get("OWLY_TEST_RECEIVED", '["/tmp/foto de vacaciones.jpg"]')))
 elif command == "send":
     if os.environ.get("OWLY_TEST_SEND_FAIL"):
         print("owly: no AWDL peer answered /Discover", file=sys.stderr, flush=True)

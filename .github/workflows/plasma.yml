@@ -15,7 +15,7 @@ jobs:
     container: archlinux:base-devel
     steps:
       - name: Install build dependencies
-        run: pacman -Syu --noconfirm --needed git cmake ninja qt6-base qt6-declarative ki18n python
+        run: pacman -Syu --noconfirm --needed git cmake ninja qt6-base qt6-declarative ki18n kio kio-extras extra-cmake-modules python
       - uses: actions/checkout@v4
       - name: Build the widget and Qt adapter tests
         run: |

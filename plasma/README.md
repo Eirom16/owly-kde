@@ -7,8 +7,11 @@ colocar en el escritorio o habilitar en la configuración de la bandeja del sist
 ## Instalar
 
 Requiere Plasma 6, Qt 6.6 o posterior con sus archivos de desarrollo (Core,
-Gui, Qml, Quick y DBus), CMake, un compilador C++17 y Rust. En ejecución usa
-los módulos QML de Plasma Components, Plasma Extras, Kirigami y Qt Quick Dialogs,
+Gui, Qml, Quick y DBus), KDE Frameworks 6 KIO con sus archivos de desarrollo,
+CMake, un compilador C++17 y Rust. Las miniaturas usan los complementos de KIO
+(por ejemplo, `kio-extras` para imágenes y documentos, y `ffmpegthumbs` para vídeo).
+Si no hay un complemento disponible, se muestra el icono del tipo de archivo.
+En ejecución usa los módulos QML de Plasma Components, Plasma Extras, Kirigami y Qt Quick Dialogs,
 normalmente incluidos con Plasma. No requiere Python para funcionar.
 
 Desde la raíz del proyecto:
@@ -53,7 +56,11 @@ la de este checkout, con soporte para los eventos `--json`.
    rechaza antes del plazo de 15 segundos que ya establece el receptor.
 4. **Descargas** abre la carpeta de destino. **Actividad** muestra las últimas
    veinte transferencias o errores durante la vida de esa instancia del widget.
-Los detalles se pueden seleccionar y copiar para diagnosticar un fallo de envío.
+   Cada archivo enviado o recibido muestra su miniatura y nombre. Púlsalo para
+   abrirlo con la aplicación del sistema; el botón de carpeta abre su ubicación.
+   Los lotes muestran una fila por archivo. Si se mueve o elimina un archivo,
+   al abrirlo se informa de que ya no está disponible en su ubicación original.
+   Los detalles de los errores se pueden seleccionar y copiar.
 
 Cerrar el desplegable mantiene la sesión activa. Desactivar, agotar el plazo
 o retirar el widget libera la radio mediante la CLI y el servicio existentes.
@@ -91,7 +98,8 @@ El widget usa una concesión de radio vinculada al proceso, nunca una concesión
 separada. No adquiere privilegios propios. La recepción no usa `--accept`.
 Los procesos trabajan de forma asíncrona y sus registros se limitan en memoria.
 
-Para ejecutar pruebas del adaptador, se necesitan Qt Test, KF6I18n y Python 3:
+Para ejecutar pruebas del adaptador, se necesitan Qt Test, KF6I18n, los
+complementos de miniaturas de imágenes (`kio-extras`) y Python 3:
 
 ```sh
 cmake -S plasma -B target/plasma -DBUILD_TESTING=ON
@@ -102,8 +110,10 @@ cargo test --locked -p owly-cli
 
 La prueba de procesos utiliza una CLI simulada que no toca la red ni la radio.
 Comprueba decisiones, argumentos con caracteres especiales, eventos fragmentados,
-cancelación, archivos inválidos y liberación de la sesión. Para una vista previa
-de la interfaz real con dispositivos simulados:
+cancelación, archivos inválidos, apertura explícita de archivos del historial,
+archivos eliminados y liberación de la sesión. Otra prueba genera una miniatura
+PNG real mediante KIO y verifica su proporción y el cambio a un archivo ausente.
+Para una vista previa de la interfaz real con dispositivos simulados:
 
 ```sh
 target/plasma/owly-preview --fixture

@@ -373,17 +373,17 @@ PC.Page {
                             required property var modelData
                             Layout.fillWidth: true
                             padding: Kirigami.Units.largeSpacing
-                            RowLayout {
+                            ColumnLayout {
                                 width: parent.width
-                                spacing: Kirigami.Units.largeSpacing
-                                Kirigami.Icon {
-                                    source: historyRow.modelData.icon
-                                    implicitWidth: Kirigami.Units.iconSizes.medium
-                                    implicitHeight: implicitWidth
-                                }
-                                ColumnLayout {
+                                spacing: Kirigami.Units.smallSpacing
+                                RowLayout {
                                     Layout.fillWidth: true
-                                    spacing: Kirigami.Units.smallSpacing
+                                    spacing: Kirigami.Units.largeSpacing
+                                    Kirigami.Icon {
+                                        source: historyRow.modelData.icon
+                                        implicitWidth: Kirigami.Units.iconSizes.small
+                                        implicitHeight: implicitWidth
+                                    }
                                     PC.Label {
                                         Layout.fillWidth: true
                                         text: historyRow.modelData.title
@@ -391,18 +391,28 @@ PC.Page {
                                         font.bold: true
                                         wrapMode: Text.Wrap
                                     }
-                                    PC.TextArea {
+                                    PE.DescriptiveLabel { text: historyRow.modelData.time }
+                                }
+                                Repeater {
+                                    model: historyRow.modelData.files || []
+                                    delegate: HistoryFile {
+                                        required property var modelData
                                         Layout.fillWidth: true
-                                        text: historyRow.modelData.detail
-                                        textFormat: TextEdit.PlainText
-                                        wrapMode: TextEdit.WrapAnywhere
-                                        readOnly: true
-                                        selectByMouse: true
-                                        padding: 0
-                                        background: null
+                                        file: modelData
+                                        backend: view.backend
                                     }
                                 }
-                                PE.DescriptiveLabel { text: historyRow.modelData.time }
+                                PC.TextArea {
+                                    Layout.fillWidth: true
+                                    visible: (historyRow.modelData.files || []).length === 0
+                                    text: historyRow.modelData.detail
+                                    textFormat: TextEdit.PlainText
+                                    wrapMode: TextEdit.WrapAnywhere
+                                    readOnly: true
+                                    selectByMouse: true
+                                    padding: 0
+                                    background: null
+                                }
                             }
                         }
                     }

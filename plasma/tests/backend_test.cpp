@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "../src/backend.h"
+#include <QDesktopServices>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -10,6 +11,14 @@
 
 class BackendTest : public QObject {
   Q_OBJECT
+  QList<QUrl> openedUrls;
+private slots:
+  void captureUrl(const QUrl &url) { openedUrls << url; }
+  void init() {
+    openedUrls.clear();
+    QDesktopServices::setUrlHandler("file", this, "captureUrl");
+  }
+  void cleanup() { QDesktopServices::unsetUrlHandler("file"); }
 private slots:
   void lifecycleAndTransfers() {
     QTemporaryDir dir;
@@ -31,6 +40,11 @@ private slots:
     backend.answer("7", true);
     QTRY_COMPARE(backend.state()["history"].toList().size(), 1);
     QVERIFY(backend.state()["requests"].toList().isEmpty());
+    const auto received =
+        backend.state()["history"].toList().first().toMap()["files"].toList();
+    QCOMPARE(received.size(), 1);
+    QCOMPARE(received.first().toMap()["url"].toUrl(),
+             QUrl::fromLocalFile("/tmp/foto de vacaciones.jpg"));
 
     // Leading dashes, spaces and shell metacharacters stay one argument.
     const auto filePath = dir.filePath("--foto $(touch nope);.jpg");
@@ -38,10 +52,31 @@ private slots:
     QVERIFY(file.open(QIODevice::WriteOnly));
     file.write("test");
     file.close();
-    backend.sendFiles("aa:bb:cc:dd:ee:ff", {QUrl::fromLocalFile(filePath)});
+    const auto fileUrl = QUrl::fromLocalFile(filePath);
+    const auto secondPath = dir.filePath("otra foto #2.png");
+    QVERIFY(QFile::copy(filePath, secondPath));
+    const auto secondUrl = QUrl::fromLocalFile(secondPath);
+    backend.sendFiles("aa:bb:cc:dd:ee:ff", {fileUrl, secondUrl});
     QTRY_COMPARE(backend.state()["history"].toList().size(), 2);
     QTRY_VERIFY(!backend.state()["sending"].toBool());
     QVERIFY(backend.state()["error"].toString().isEmpty());
+    const auto sent =
+        backend.state()["history"].toList().first().toMap()["files"].toList();
+    QCOMPARE(sent.size(), 2);
+    QCOMPARE(sent.first().toMap()["url"].toUrl(), fileUrl);
+    QCOMPARE(sent.last().toMap()["url"].toUrl(), secondUrl);
+    QVERIFY(openedUrls.isEmpty());
+    backend.openHistoryFile(fileUrl);
+    backend.openHistoryFile(secondUrl, true);
+    QCOMPARE(openedUrls,
+             (QList<QUrl>{fileUrl, QUrl::fromLocalFile(dir.path())}));
+    backend.openHistoryFile(QUrl("https://example.invalid"));
+    backend.openHistoryFile(QUrl::fromLocalFile("/etc/passwd"));
+    QCOMPARE(openedUrls.size(), 2);
+    QVERIFY(QFile::remove(filePath));
+    backend.openHistoryFile(fileUrl);
+    QCOMPARE(openedUrls.size(), 2);
+    QVERIFY(backend.state()["error"].toString().contains("ubicación original"));
     QFile log(logPath);
     QVERIFY(log.open(QIODevice::ReadOnly));
     const auto calls = log.readAll();
@@ -126,6 +161,7 @@ private slots:
         backend.state()["error"].toString().contains("no AWDL peer answered"));
     const auto history = backend.state()["history"].toList();
     QCOMPARE(history.size(), 1);
+    QVERIFY(history.first().toMap()["files"].toList().isEmpty());
     QVERIFY(history.first().toMap()["detail"].toString().contains(
         "no AWDL peer answered"));
     backend.dismissError();

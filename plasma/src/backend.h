@@ -4,6 +4,7 @@
 #include <QJsonObject>
 #include <QObject>
 #include <QProcess>
+#include <QUrl>
 #include <QVariantMap>
 
 class Backend : public QObject {
@@ -25,6 +26,7 @@ public:
   Q_INVOKABLE void answer(const QString &id, bool accept);
   Q_INVOKABLE void dismissError();
   Q_INVOKABLE void openDownloads();
+  Q_INVOKABLE void openHistoryFile(const QUrl &url, bool folder = false);
 signals:
   void changed();
   void incoming();
@@ -37,7 +39,8 @@ private:
   void terminate(QProcess *process);
   void set(const QString &key, const QVariant &value);
   void fail(const QString &message);
-  void record(const QString &title, const QString &detail, const QString &icon);
+  void record(const QString &title, const QString &detail, const QString &icon,
+              const QStringList &paths = {});
   void notify(const QString &title, const QString &body);
   void removeRequest(const QString &id);
   QStringList identityArgs() const;

@@ -38,7 +38,9 @@ originales de Rust. La compatibilidad depende de la tarjeta Wi-Fi; consulta
 
 Requiere **KDE Plasma 6**, **Qt 6.6 o posterior**, **Rust 1.88 o posterior**,
 un compilador C++17 y CMake. Para compilar el widget hacen falta los archivos
-de desarrollo de Qt Core, Gui, Qml, Quick y DBus. En ejecución necesita los
+de desarrollo de Qt Core, Gui, Qml, Quick y DBus, y KDE Frameworks 6 KIO.
+Las miniaturas usan los complementos instalados de KIO (`kio-extras` y,
+para vídeo, `ffmpegthumbs`). En ejecución necesita los
 módulos QML de Plasma Components, Plasma Extras, Kirigami y Qt Quick Dialogs.
 
 ### 1. Obtener el fork
@@ -95,8 +97,10 @@ separado, configurar sus rutas o ejecutar las vistas previas.
    **Rechazar** cuando aparezca una. El receptor limita la respuesta a 15 segundos.
 
 **Descargas** abre la carpeta de destino. **Actividad** muestra las últimas
-transferencias y errores durante la vida de esa instancia del widget. Los
-detalles de los errores se pueden seleccionar y copiar para diagnosticar un fallo.
+transferencias y errores durante la vida de esa instancia del widget. Los archivos
+enviados y recibidos muestran miniaturas: pulsa uno para abrirlo con la aplicación
+del sistema o usa el botón de carpeta para abrir su ubicación. Los detalles de los
+errores se pueden seleccionar y copiar para diagnosticar un fallo.
 Los enlaces recibidos se muestran como texto; no se abren automáticamente.
 
 Cerrar el desplegable mantiene activa la sesión. Al desactivar, expirar el
